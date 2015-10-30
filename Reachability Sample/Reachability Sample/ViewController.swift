@@ -5,10 +5,20 @@
 //  Created by Ashley Mills on 22/09/2014.
 //  Copyright (c) 2014 Joylord Systems. All rights reserved.
 //
-
+//
 import UIKit
 
 let useClosures = false
+
+extension Reachability.NetworkStatus {
+    func color() -> UIColor {
+        switch self {
+        case .ReachableViaWiFi: return UIColor.greenColor()
+        case .ReachableViaWWAN(let type): return type.isFast() ? UIColor.blueColor() : UIColor.orangeColor()
+        case .NotReachable: return UIColor.redColor()
+        }
+    }
+}
 
 class ViewController: UIViewController {
 
@@ -22,38 +32,18 @@ class ViewController: UIViewController {
         do {
             let reachability = try Reachability.reachabilityForInternetConnection()
             self.reachability = reachability
+            try self.reachability!.startNotifier()
         } catch ReachabilityError.FailedToCreateWithAddress(let address) {
             networkStatus.textColor = UIColor.redColor()
             networkStatus.text = "Unable to create\nReachability with address:\n\(address)"
             return
         } catch {}
         
-        if (useClosures) {
-            reachability?.whenReachable = { reachability in
-                self.updateLabelColourWhenReachable(reachability)
-            }
-            reachability?.whenUnreachable = { reachability in
-                self.updateLabelColourWhenNotReachable(reachability)
-            }
-        } else {
-            NSNotificationCenter.defaultCenter().addObserver(self, selector: "reachabilityChanged:", name: ReachabilityChangedNotification, object: reachability)
-        }
-        
-        do {
-            try reachability?.startNotifier()
-        } catch {
-            networkStatus.textColor = UIColor.redColor()
-            networkStatus.text = "Unable to start\nnotifier"
-            return
-        }
+        reachability?.networkStatusChanged = updateLabel
         
         // Initial reachability check
         if let reachability = reachability {
-            if reachability.isReachable() {
-                updateLabelColourWhenReachable(reachability)
-            } else {
-                updateLabelColourWhenNotReachable(reachability)
-            }
+            updateLabel(reachability.currentReachabilityStatus)
         }
     }
     
@@ -65,33 +55,11 @@ class ViewController: UIViewController {
             NSNotificationCenter.defaultCenter().removeObserver(self, name: ReachabilityChangedNotification, object: nil)
         }
     }
-    
-    func updateLabelColourWhenReachable(reachability: Reachability) {
-        if reachability.isReachableViaWiFi() {
-            self.networkStatus.textColor = UIColor.greenColor()
-        } else {
-            self.networkStatus.textColor = UIColor.blueColor()
-        }
-        
-        self.networkStatus.text = reachability.currentReachabilityString
-    }
 
-    func updateLabelColourWhenNotReachable(reachability: Reachability) {
-        self.networkStatus.textColor = UIColor.redColor()
-        
-        self.networkStatus.text = reachability.currentReachabilityString
+    func updateLabel(status: Reachability.NetworkStatus) {
+        self.networkStatus.textColor = status.color()
+        self.networkStatus.text = status.description
     }
-
-    
-    func reachabilityChanged(note: NSNotification) {
-        let reachability = note.object as! Reachability
-        
-        if reachability.isReachable() {
-            updateLabelColourWhenReachable(reachability)
-        } else {
-            updateLabelColourWhenNotReachable(reachability)
-        }
-    }
+   
 }
-
 

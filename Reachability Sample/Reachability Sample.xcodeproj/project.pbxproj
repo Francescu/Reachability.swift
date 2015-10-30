@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		094860E91BE37486002B0D8B /* SystemConfiguration.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 094860E81BE37486002B0D8B /* SystemConfiguration.framework */; };
+		094860EB1BE3748B002B0D8B /* CoreTelephony.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 094860EA1BE3748B002B0D8B /* CoreTelephony.framework */; };
 		CA25599F19D0D1990073826D /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA25599E19D0D1990073826D /* AppDelegate.swift */; };
 		CA2559A119D0D1990073826D /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA2559A019D0D1990073826D /* ViewController.swift */; };
 		CA2559A419D0D1990073826D /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = CA2559A219D0D1990073826D /* Main.storyboard */; };
@@ -27,6 +29,9 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		094860E81BE37486002B0D8B /* SystemConfiguration.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SystemConfiguration.framework; path = System/Library/Frameworks/SystemConfiguration.framework; sourceTree = SDKROOT; };
+		094860EA1BE3748B002B0D8B /* CoreTelephony.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreTelephony.framework; path = System/Library/Frameworks/CoreTelephony.framework; sourceTree = SDKROOT; };
+		094860ED1BE375B8002B0D8B /* Reachability Sample-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Reachability Sample-Bridging-Header.h"; sourceTree = "<group>"; };
 		CA25599919D0D1990073826D /* Reachability Sample.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Reachability Sample.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		CA25599D19D0D1990073826D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		CA25599E19D0D1990073826D /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
@@ -45,6 +50,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				094860EB1BE3748B002B0D8B /* CoreTelephony.framework in Frameworks */,
+				094860E91BE37486002B0D8B /* SystemConfiguration.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -58,9 +65,19 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		094860EC1BE3748E002B0D8B /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				094860EA1BE3748B002B0D8B /* CoreTelephony.framework */,
+				094860E81BE37486002B0D8B /* SystemConfiguration.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		CA25599019D0D1990073826D = {
 			isa = PBXGroup;
 			children = (
+				094860EC1BE3748E002B0D8B /* Frameworks */,
 				CA25599B19D0D1990073826D /* Reachability Sample */,
 				CA2559B119D0D1990073826D /* Reachability SampleTests */,
 				CA25599A19D0D1990073826D /* Products */,
@@ -86,6 +103,7 @@
 				CA2559A519D0D1990073826D /* Images.xcassets */,
 				CA2559A719D0D1990073826D /* LaunchScreen.xib */,
 				CA25599C19D0D1990073826D /* Supporting Files */,
+				094860ED1BE375B8002B0D8B /* Reachability Sample-Bridging-Header.h */,
 			);
 			path = "Reachability Sample";
 			sourceTree = "<group>";
@@ -159,7 +177,7 @@
 		CA25599119D0D1990073826D /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastSwiftUpdateCheck = 0700;
+				LastSwiftUpdateCheck = 0710;
 				LastUpgradeCheck = 0700;
 				ORGANIZATIONNAME = "Joylord Systems";
 				TargetAttributes = {
@@ -344,12 +362,15 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ENABLE_MODULES = YES;
 				CLANG_STATIC_ANALYZER_MODE = deep;
 				INFOPLIST_FILE = "Reachability Sample/Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = "uk.co.joylordsystems.$(PRODUCT_NAME:rfc1034identifier)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				RUN_CLANG_STATIC_ANALYZER = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = "Reachability Sample/Reachability Sample-Bridging-Header.h";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
 			name = Debug;
 		};
@@ -357,12 +378,14 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ENABLE_MODULES = YES;
 				CLANG_STATIC_ANALYZER_MODE = deep;
 				INFOPLIST_FILE = "Reachability Sample/Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = "uk.co.joylordsystems.$(PRODUCT_NAME:rfc1034identifier)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				RUN_CLANG_STATIC_ANALYZER = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = "Reachability Sample/Reachability Sample-Bridging-Header.h";
 			};
 			name = Release;
 		};

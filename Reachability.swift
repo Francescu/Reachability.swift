@@ -27,7 +27,8 @@ POSSIBILITY OF SUCH DAMAGE.
 
 import SystemConfiguration
 import Foundation
-
+import CoreTelephony
+import UIKit
 enum ReachabilityError: ErrorType {
     case FailedToCreateWithAddress(sockaddr_in)
     case FailedToCreateWithHostname(String)
@@ -45,20 +46,37 @@ func callback(reachability:SCNetworkReachability, flags: SCNetworkReachabilityFl
     }
 }
 
+let test = CTRadioAccessTechnologyEdge
 
 public class Reachability: NSObject {
 
+    public typealias NetworkStatusChanged = (NetworkStatus) -> ()
     public typealias NetworkReachable = (Reachability) -> ()
     public typealias NetworkUnreachable = (Reachability) -> ()
 
-    public enum NetworkStatus: CustomStringConvertible {
+    public enum NetworkStatus: CustomStringConvertible, Equatable {
 
-        case NotReachable, ReachableViaWiFi, ReachableViaWWAN
+        case NotReachable, ReachableViaWiFi, ReachableViaWWAN(CellularType)
 
+        func reachable() -> Bool {
+            switch self {
+            case .NotReachable:                           return false
+            case .ReachableViaWiFi, .ReachableViaWWAN(_): return true
+            }
+        }
+        
+        func reachableFast() -> Bool {
+            switch self {
+            case .ReachableViaWiFi:           return true
+            case .ReachableViaWWAN(let type): return type.isFast()
+            case .NotReachable:               return false
+            }
+        }
+        
         public var description: String {
             switch self {
-            case .ReachableViaWWAN:
-                return "Cellular"
+            case .ReachableViaWWAN(let type):
+                return "Cellular-\(type)"
             case .ReachableViaWiFi:
                 return "WiFi"
             case .NotReachable:
@@ -67,28 +85,70 @@ public class Reachability: NSObject {
         }
     }
 
+    public enum CellularType {
+        case GRPS, Edge, WCDMA, HSDPA, HSUPA, CDMA1x, CDMAEVD0, eHRPD, LTE, Unknown
+        
+        init(radioConstant: String) {
+            switch radioConstant {
+            case CTRadioAccessTechnologyGPRS:
+                self = .GRPS
+            case CTRadioAccessTechnologyEdge:
+                self = .Edge
+            case CTRadioAccessTechnologyWCDMA:
+                self = .WCDMA
+            case CTRadioAccessTechnologyHSDPA:
+                self = .HSDPA
+            case CTRadioAccessTechnologyHSUPA:
+                self = .HSUPA
+            case CTRadioAccessTechnologyCDMA1x:
+                self = .CDMA1x
+            case CTRadioAccessTechnologyCDMAEVDORev0, CTRadioAccessTechnologyCDMAEVDORevA, CTRadioAccessTechnologyCDMAEVDORevB:
+                self = .CDMAEVD0
+            case CTRadioAccessTechnologyeHRPD:
+                self = .eHRPD
+            case CTRadioAccessTechnologyLTE:
+                self = .LTE
+            default:
+                self = .Unknown
+            }
+        }
+        
+        func isFast() -> Bool {
+            switch self {
+            case .GRPS, .Edge, .CDMA1x, .Unknown:                 return false
+            case .WCDMA, .HSDPA, .HSUPA, .CDMAEVD0, .eHRPD, .LTE: return true
+            }
+        }
+    }
+
+    private let telephonyInfo = CTTelephonyNetworkInfo()
+    
     // MARK: - *** Public properties ***
 
     public var whenReachable: NetworkReachable?
     public var whenUnreachable: NetworkUnreachable?
+    public var networkStatusChanged: NetworkStatusChanged?
+    
     public var reachableOnWWAN: Bool
     public var notificationCenter = NSNotificationCenter.defaultCenter()
 
     public var currentReachabilityStatus: NetworkStatus {
-        if isReachable() {
-            if isReachableViaWiFi() {
-                return .ReachableViaWiFi
-            }
-            if isRunningOnDevice {
-                return .ReachableViaWWAN
-            }
-        }
-
-        return .NotReachable
+        return reachabilityStatus(currentCellularType)
     }
 
     public var currentReachabilityString: String {
         return "\(currentReachabilityStatus)"
+    }
+    
+    private var currentCellularType: CellularType = .Unknown {
+        didSet {
+            print("Pong cellular!")
+            if let networkStatusChanged = networkStatusChanged {
+                dispatch_async(dispatch_get_main_queue()) {
+                    networkStatusChanged(self.currentReachabilityStatus)
+                }
+            }
+        }
     }
 
     // MARK: - *** Initialisation methods ***
@@ -96,6 +156,29 @@ public class Reachability: NSObject {
     required public init(reachabilityRef: SCNetworkReachability) {
         reachableOnWWAN = true
         self.reachabilityRef = reachabilityRef
+        
+        super.init()
+        
+        updateCurrentCellularType()
+        
+        notificationCenter.addObserverForName(UIApplicationDidBecomeActiveNotification, object: nil, queue: NSOperationQueue.mainQueue()) { _ in
+            print("Ping pong AppActive")
+            if let networkStatusChanged = self.networkStatusChanged {
+                networkStatusChanged(self.currentReachabilityStatus)
+            }
+        }
+        notificationCenter.addObserverForName(CTRadioAccessTechnologyDidChangeNotification, object: nil, queue: nil, usingBlock: updateCurrentCellularType)
+    }
+    
+    private func updateCurrentCellularType(notification: NSNotification? = nil) {
+        print("Ping cellular!")
+        if let radio = telephonyInfo.currentRadioAccessTechnology {
+            print(radio)
+            currentCellularType = CellularType(radioConstant: radio)
+        }
+        else {
+            print("pong plane")
+        }
     }
     
     public convenience init(hostname: String) throws {
@@ -167,6 +250,20 @@ public class Reachability: NSObject {
     }
 
     // MARK: - *** Connection test methods ***
+    
+    private func reachabilityStatus(cellularType: CellularType) -> NetworkStatus {
+        if isReachable() {
+            if isReachableViaWiFi() {
+                return .ReachableViaWiFi
+            }
+            if isRunningOnDevice {
+                return .ReachableViaWWAN(cellularType)
+            }
+        }
+        
+        return .NotReachable
+    }
+    
     public func isReachable() -> Bool {
         return isReachableWithTest({ (flags: SCNetworkReachabilityFlags) -> (Bool) in
             return self.isReachableWithFlags(flags)
@@ -189,6 +286,10 @@ public class Reachability: NSObject {
             }
         }
         return false
+    }
+    
+    public func isReachableFast() -> Bool {
+        return currentReachabilityStatus.reachableFast()
     }
 
     public func isReachableViaWiFi() -> Bool {
@@ -225,6 +326,11 @@ public class Reachability: NSObject {
     private let reachabilitySerialQueue = dispatch_queue_create("uk.co.ashleymills.reachability", DISPATCH_QUEUE_SERIAL)
 
     private func reachabilityChanged(flags: SCNetworkReachabilityFlags) {
+        print("Pong callback!")
+        if let networkStatusChanged = networkStatusChanged {
+            networkStatusChanged(currentReachabilityStatus)
+        }
+        
         if isReachableWithFlags(flags) {
             if let block = whenReachable {
                 block(self)
@@ -384,5 +490,12 @@ public class Reachability: NSObject {
         reachabilityRef = nil
         whenReachable = nil
         whenUnreachable = nil
+        
+        notificationCenter.removeObserver(self, name: CTRadioAccessTechnologyDidChangeNotification, object: nil)
+        notificationCenter.removeObserver(self, name: UIApplicationDidBecomeActiveNotification, object: nil)
     }
+}
+
+public func ==(left: Reachability.NetworkStatus, right: Reachability.NetworkStatus) -> Bool {
+    return left.description == right.description
 }
