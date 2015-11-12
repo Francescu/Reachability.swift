@@ -256,8 +256,9 @@ public class Reachability: NSObject {
             if isReachableViaWiFi() {
                 return .ReachableViaWiFi
             }
-            if isRunningOnDevice {
-                return .ReachableViaWWAN(cellularType)
+            if isRunningOnDevice,
+                let radio = telephonyInfo.currentRadioAccessTechnology {
+                    return .ReachableViaWWAN(CellularType(radioConstant: radio))
             }
         }
         
@@ -274,7 +275,6 @@ public class Reachability: NSObject {
 
         if isRunningOnDevice {
             return isReachableWithTest() { flags -> Bool in
-                // Check we're REACHABLE
                 if self.isReachable(flags) {
 
                     // Now, check we're on WWAN
